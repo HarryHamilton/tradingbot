@@ -107,7 +107,7 @@ def trading_job():
     # SELL
     if signal == 1:
         market_order = MarketOrderRequest(instrument="EUR_USD",
-                                          units=-1000,
+                                          units=-1,
                                           takeProfitOnFill=TakeProfitDetails(price=TPSell).data,
                                           stopLossOnFill=StopLossDetails(price=SLSell).data)
         r = orders.OrderCreate(accountID, data=market_order.data)
@@ -116,14 +116,17 @@ def trading_job():
     # BUY
     elif signal == 2:
         market_order = MarketOrderRequest(instrument="EUR_USD",
-                                          units=+10000,
+                                          units=+1,
                                           takeProfitOnFill=TakeProfitDetails(price=TPBuy).data,
                                           stopLossOnFill=StopLossDetails(price=SLBuy).data)
         r = orders.OrderCreate(accountID, data=market_order.data)
         rv = client.request(r)
         print(rv)
 
-trading_job()
 
+# trading_job()
+scheduler = BlockingScheduler()
+scheduler.add_job(trading_job, 'cron', day_of_week='mon-sun', hour='00-23', minute='1,16,31,46', start_date='2022-01-12 12:00:00', timezone='America/Chicago')
+scheduler.start()
 
 
