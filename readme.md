@@ -1,0 +1,2 @@
+A trading bot that uses the OANDA API to download the last N number of candles every 15minutes, applying a function to 
+check for engulfing candle sticks and then making a decision to buy/sell whilst applying a take profit & stop loss
