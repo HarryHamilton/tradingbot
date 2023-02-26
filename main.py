@@ -65,3 +65,65 @@ def get_candles(last_n_candles):
     #    print(candle.bid.o)
     # this will return the opening price of the last 5 candles
 
+
+def trading_job():
+    candles = get_candles(5)
+
+    # Create a dataframe
+    dfstream = pd.DataFrame(columns=["Open", "Close", "High", "Low"])
+    for index, candle in enumerate(candles):
+        dfstream.loc[index, ["Open"]] = float(str(candle.bid.o))
+        dfstream.loc[index, ["Close"]] = float(str(candle.bid.c))
+        dfstream.loc[index, ["High"]] = float(str(candle.bid.h))
+        dfstream.loc[index, ["Low"]] = float(str(candle.bid.l))
+
+    dfstream["Open"] = dfstream["Open"].astype(float)
+    dfstream["Close"] = dfstream["Close"].astype(float)
+    dfstream["High"] = dfstream["High"].astype(float)
+    dfstream["Low"] = dfstream["Low"].astype(float)
+
+    signal = signal_generator(dfstream.iloc[:-1,:])  # Check if we have an engulfing pattern on the data we just found
+
+    # executes order
+    client = API(access_token)
+
+    # Use previous candle range as the stop loss distance
+    SLTPRatio = 2.  # stop loss take profit ratio
+    previous_candle_range = abs(dfstream["High"].iloc[-2] - dfstream["Low"].iloc[-2])  # Get range, high - low price
+    open_price = float(str(candle.bid.o))
+
+    # Stop loss
+    SLBuy = open_price - previous_candle_range
+    SLSell = open_price + previous_candle_range
+
+    # Take profit
+    TPBuy = open_price + previous_candle_range * SLTPRatio
+    TPSell = open_price - previous_candle_range * SLTPRatio
+
+    # print(dfstream.iloc[:-1,:])
+    # print("--")
+    # print(TPBuy, " ", SLBuy, " ", TPSell, " ", SLSell)
+
+    # SELL
+    if signal == 1:
+        market_order = MarketOrderRequest(instrument="EUR_USD",
+                                          units=-1000,
+                                          takeProfitOnFill=TakeProfitDetails(price=TPSell).data,
+                                          stopLossOnFill=StopLossDetails(price=SLSell).data)
+        r = orders.OrderCreate(accountID, data=market_order.data)
+        rv = client.request(r)
+        print(rv)
+    # BUY
+    elif signal == 2:
+        market_order = MarketOrderRequest(instrument="EUR_USD",
+                                          units=+10000,
+                                          takeProfitOnFill=TakeProfitDetails(price=TPBuy).data,
+                                          stopLossOnFill=StopLossDetails(price=SLBuy).data)
+        r = orders.OrderCreate(accountID, data=market_order.data)
+        rv = client.request(r)
+        print(rv)
+
+trading_job()
+
+
+
